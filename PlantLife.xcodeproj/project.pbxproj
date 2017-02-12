@@ -7,7 +7,12 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		95D067F91E5018F600973CD7 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 95D067F81E5018F600973CD7 /* main.cpp */; };
+		95D067F91E5018F600973CD7 /* PlantLife.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 95D067F81E5018F600973CD7 /* PlantLife.cpp */; };
+		95D068011E50190800973CD7 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 95D068001E50190800973CD7 /* OpenGL.framework */; };
+		95D068031E50190D00973CD7 /* GLUT.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 95D068021E50190D00973CD7 /* GLUT.framework */; };
+		95D068091E501A1100973CD7 /* imgui_draw.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 95D068051E501A1100973CD7 /* imgui_draw.cpp */; };
+		95D0680A1E501A1100973CD7 /* imgui_impl_glut.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 95D068061E501A1100973CD7 /* imgui_impl_glut.cpp */; };
+		95D0680B1E501A1100973CD7 /* imgui.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 95D068081E501A1100973CD7 /* imgui.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -24,7 +29,15 @@
 
 /* Begin PBXFileReference section */
 		95D067F51E5018F600973CD7 /* PlantLife */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = PlantLife; sourceTree = BUILT_PRODUCTS_DIR; };
-		95D067F81E5018F600973CD7 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
+		95D067F81E5018F600973CD7 /* PlantLife.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = PlantLife.cpp; sourceTree = "<group>"; };
+		95D068001E50190800973CD7 /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = System/Library/Frameworks/OpenGL.framework; sourceTree = SDKROOT; };
+		95D068021E50190D00973CD7 /* GLUT.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GLUT.framework; path = System/Library/Frameworks/GLUT.framework; sourceTree = SDKROOT; };
+		95D068041E501A1100973CD7 /* imgui.ini */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = imgui.ini; sourceTree = "<group>"; };
+		95D068051E501A1100973CD7 /* imgui_draw.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = imgui_draw.cpp; sourceTree = "<group>"; };
+		95D068061E501A1100973CD7 /* imgui_impl_glut.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = imgui_impl_glut.cpp; sourceTree = "<group>"; };
+		95D068071E501A1100973CD7 /* imgui_impl_glut.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = imgui_impl_glut.h; sourceTree = "<group>"; };
+		95D068081E501A1100973CD7 /* imgui.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = imgui.cpp; sourceTree = "<group>"; };
+		95D0680C1E5023DD00973CD7 /* include */ = {isa = PBXFileReference; lastKnownFileType = folder; path = include; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -32,6 +45,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				95D068031E50190D00973CD7 /* GLUT.framework in Frameworks */,
+				95D068011E50190800973CD7 /* OpenGL.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -43,6 +58,7 @@
 			children = (
 				95D067F71E5018F600973CD7 /* PlantLife */,
 				95D067F61E5018F600973CD7 /* Products */,
+				95D067FF1E50190800973CD7 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -57,9 +73,24 @@
 		95D067F71E5018F600973CD7 /* PlantLife */ = {
 			isa = PBXGroup;
 			children = (
-				95D067F81E5018F600973CD7 /* main.cpp */,
+				95D0680C1E5023DD00973CD7 /* include */,
+				95D068041E501A1100973CD7 /* imgui.ini */,
+				95D068051E501A1100973CD7 /* imgui_draw.cpp */,
+				95D068061E501A1100973CD7 /* imgui_impl_glut.cpp */,
+				95D068071E501A1100973CD7 /* imgui_impl_glut.h */,
+				95D068081E501A1100973CD7 /* imgui.cpp */,
+				95D067F81E5018F600973CD7 /* PlantLife.cpp */,
 			);
 			path = PlantLife;
+			sourceTree = "<group>";
+		};
+		95D067FF1E50190800973CD7 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				95D068021E50190D00973CD7 /* GLUT.framework */,
+				95D068001E50190800973CD7 /* OpenGL.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -120,7 +151,10 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				95D067F91E5018F600973CD7 /* main.cpp in Sources */,
+				95D067F91E5018F600973CD7 /* PlantLife.cpp in Sources */,
+				95D0680B1E501A1100973CD7 /* imgui.cpp in Sources */,
+				95D0680A1E501A1100973CD7 /* imgui_impl_glut.cpp in Sources */,
+				95D068091E501A1100973CD7 /* imgui_draw.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -218,6 +252,8 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				DEVELOPMENT_TEAM = CES59UGD9X;
+				HEADER_SEARCH_PATHS = ./include;
+				MACOSX_DEPLOYMENT_TARGET = 10.12;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Debug;
@@ -226,6 +262,8 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				DEVELOPMENT_TEAM = CES59UGD9X;
+				HEADER_SEARCH_PATHS = ./include;
+				MACOSX_DEPLOYMENT_TARGET = 10.12;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Release;
