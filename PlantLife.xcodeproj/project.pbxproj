@@ -28,11 +28,11 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		95C94C9C1E6A61B00074D0EC /* imgui.ini */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = imgui.ini; sourceTree = "<group>"; };
 		95D067F51E5018F600973CD7 /* PlantLife */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = PlantLife; sourceTree = BUILT_PRODUCTS_DIR; };
 		95D067F81E5018F600973CD7 /* PlantLife.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = PlantLife.cpp; sourceTree = "<group>"; };
 		95D068001E50190800973CD7 /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = System/Library/Frameworks/OpenGL.framework; sourceTree = SDKROOT; };
 		95D068021E50190D00973CD7 /* GLUT.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GLUT.framework; path = System/Library/Frameworks/GLUT.framework; sourceTree = SDKROOT; };
-		95D068041E501A1100973CD7 /* imgui.ini */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = imgui.ini; sourceTree = "<group>"; };
 		95D068051E501A1100973CD7 /* imgui_draw.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = imgui_draw.cpp; sourceTree = "<group>"; };
 		95D068061E501A1100973CD7 /* imgui_impl_glut.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = imgui_impl_glut.cpp; sourceTree = "<group>"; };
 		95D068071E501A1100973CD7 /* imgui_impl_glut.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = imgui_impl_glut.h; sourceTree = "<group>"; };
@@ -73,8 +73,8 @@
 		95D067F71E5018F600973CD7 /* PlantLife */ = {
 			isa = PBXGroup;
 			children = (
+				95C94C9C1E6A61B00074D0EC /* imgui.ini */,
 				95D0680C1E5023DD00973CD7 /* include */,
-				95D068041E501A1100973CD7 /* imgui.ini */,
 				95D068051E501A1100973CD7 /* imgui_draw.cpp */,
 				95D068061E501A1100973CD7 /* imgui_impl_glut.cpp */,
 				95D068071E501A1100973CD7 /* imgui_impl_glut.h */,
@@ -252,8 +252,8 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				DEVELOPMENT_TEAM = CES59UGD9X;
-				HEADER_SEARCH_PATHS = ./include;
-				MACOSX_DEPLOYMENT_TARGET = 10.12;
+				HEADER_SEARCH_PATHS = "$(PROJECT_DIR)/include";
+				MACOSX_DEPLOYMENT_TARGET = 10.8;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Debug;
@@ -262,8 +262,8 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				DEVELOPMENT_TEAM = CES59UGD9X;
-				HEADER_SEARCH_PATHS = ./include;
-				MACOSX_DEPLOYMENT_TARGET = 10.12;
+				HEADER_SEARCH_PATHS = "$(PROJECT_DIR)/include";
+				MACOSX_DEPLOYMENT_TARGET = 10.8;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Release;
@@ -287,6 +287,7 @@
 				95D067FE1E5018F600973CD7 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
