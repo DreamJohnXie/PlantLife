@@ -179,19 +179,26 @@ void computeNormal(double *vx, double *vy, double *vz, double wx, double wy, dou
     double len;
     double nx,ny,nz;
     
-    len=sqrt(((*vx)*(*vx))+((*vy)*(*vy))+((*vz)*(*vz)));
-    *(vx)=(*vx)/len;
-    *(vy)=(*vy)/len;
-    *(vz)=(*vz)/len;
+    //    len=sqrt(((*vx)*(*vx))+((*vy)*(*vy))+((*vz)*(*vz)));
+    //    *(vx)=(*vx)/len;
+    //    *(vy)=(*vy)/len;
+    //    *(vz)=(*vz)/len;
+    //
+    //    len=sqrt((wx*wx)+(wy*wy)+(wz*wz));
+    //    wx/=len;
+    //    wy/=len;
+    //    wz/=len;
     
-    len=sqrt((wx*wx)+(wy*wy)+(wz*wz));
-    wx/=len;
-    wy/=len;
-    wz/=len;
+    // Modify unit vector computing order to get more accurate result
     
     nx=((*vy)*wz)-(wy*(*vz));
     ny=(wx*(*vz))-((*vx)*wz);
     nz=((*vx)*wy)-(wx*(*vy));
+    
+    len=sqrt((nx*nx)+(ny*ny)+(nz*nz));
+    nx/=len;
+    ny/=len;
+    nz/=len;
     
     *(vx)=nx;
     *(vy)=ny;
