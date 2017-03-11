@@ -28,6 +28,9 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		9510D9441E739BC500213085 /* executable */ = {isa = PBXFileReference; lastKnownFileType = folder; path = executable; sourceTree = SOURCE_ROOT; };
+		95183ACE1E6CD454008C6FB2 /* petal_texture_image.ppm */ = {isa = PBXFileReference; lastKnownFileType = text; path = petal_texture_image.ppm; sourceTree = "<group>"; };
+		95183ACF1E6CD454008C6FB2 /* leaf_texture_image.ppm */ = {isa = PBXFileReference; lastKnownFileType = text; path = leaf_texture_image.ppm; sourceTree = "<group>"; };
 		95C94C9C1E6A61B00074D0EC /* imgui.ini */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = imgui.ini; sourceTree = "<group>"; };
 		95D067F51E5018F600973CD7 /* PlantLife */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = PlantLife; sourceTree = BUILT_PRODUCTS_DIR; };
 		95D067F81E5018F600973CD7 /* PlantLife.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = PlantLife.cpp; sourceTree = "<group>"; };
@@ -73,8 +76,11 @@
 		95D067F71E5018F600973CD7 /* PlantLife */ = {
 			isa = PBXGroup;
 			children = (
-				95C94C9C1E6A61B00074D0EC /* imgui.ini */,
+				9510D9441E739BC500213085 /* executable */,
 				95D0680C1E5023DD00973CD7 /* include */,
+				95183ACF1E6CD454008C6FB2 /* leaf_texture_image.ppm */,
+				95183ACE1E6CD454008C6FB2 /* petal_texture_image.ppm */,
+				95C94C9C1E6A61B00074D0EC /* imgui.ini */,
 				95D068051E501A1100973CD7 /* imgui_draw.cpp */,
 				95D068061E501A1100973CD7 /* imgui_impl_glut.cpp */,
 				95D068071E501A1100973CD7 /* imgui_impl_glut.h */,

@@ -47,7 +47,8 @@
 #include <unistd.h>
 
 #define MAX_PLANTS 25		// Maximum number of plants for plant forests
-#define GRID_RESOLVE 64		// Size of the surface grid
+// modify GRID_RESOLVE that easier for square-diamond algorithm
+#define GRID_RESOLVE 65		// Size of the surface grid
 /******************************************************************************
  Data structures section
  *******************************************************************************/
@@ -70,6 +71,7 @@ struct PlantNode{
     struct PlantNode *right;    // Right child for this node (NULL means the node is a terminal)
     
     // QUESTION: We don't have a translation component... WHY?
+    // We will translation each component before actual drawing
     
     // NOTE: We don't have pointers to the parents. Make sure your drawing function knows what
     // it's doing!
@@ -84,7 +86,7 @@ GLfloat ForestXYZ[MAX_PLANTS][3];		// Location of plants in the forest as (x, y,
 GLfloat GroundXYZ[GRID_RESOLVE][GRID_RESOLVE][3];	// Array to store ground surface points as (x,y,z) points
 GLfloat GroundNormals[GRID_RESOLVE][GRID_RESOLVE][3];   // Array to hold normal vectors at vertices (will use normal to triangle
 // defined by the vertices at [i][j], [i+1][j], and [i][j+1]
-ImVec4 clear_color = ImColor(0.1f,0.1f,0.1f,1.0f);
+ImVec4 clear_color = ImColor(0.53f,0.81f,0.98f,1.0f);
 
 // Texture data
 int textures_on;				// Flag to indicate texturing should be enabled for leafs/flowers
@@ -118,6 +120,13 @@ GLfloat Pba;
 GLfloat Pbc;
 GLfloat Pbd;
 
+// For aminate the light
+GLfloat LightAngle;       // Current lighting angle arround Z-axis
+GLfloat light0_pos[3];    // Current lighting position
+
+// Maximum height for color change
+GLfloat MaximumHeight=FLT_MIN;
+
 /******************************************************************************
  Function Prototypes
  *******************************************************************************/
@@ -150,6 +159,11 @@ void AnimatedRenderPlant(void);
 void MakeSurfaceGrid(void);
 void RenderSurfaceGrid(void);
 void computeNormal(double *vx, double *vy, double *vz, double wx, double wy, double wz);
+
+// Help functions for square-diamond algorithm
+void square(int x, int y, int size, double scaleLevel);
+void diamond(int x, int y, int size, double scaleLevel);
+void DiamondSquare(int size, double scaleLevel);
 
 /**************************************************************************
  Program Code starts
@@ -220,6 +234,165 @@ void RenderSurfaceGrid(void)
     //       Don't forget to specify the normal at each vertex. Otherwise
     //       your surface won't be properly illuminated
     /////////////////////////////////////////////////////////////////////////
+    
+    // Draw sphere for light
+    glColor4f(1.0f,1.0f,0.0f,1.0f);
+    glPushMatrix();
+    const GLfloat ambientLightBall[4]={0.05f,0.05f,0.0f,1.0f};
+    const GLfloat diffuseLightBall[4]={0.5f,0.5f,0.4f,1.0f};
+    const GLfloat specularLightBall[4]={0.7f,0.7f,0.04f,1.0f};
+    const GLfloat shineLightBall=10.0f;
+    glMaterialfv(GL_FRONT, GL_AMBIENT, ambientLightBall);
+    glMaterialfv(GL_FRONT, GL_SPECULAR, diffuseLightBall);
+    glMaterialfv(GL_FRONT, GL_DIFFUSE, specularLightBall);
+    glMaterialf(GL_FRONT, GL_SHININESS, shineLightBall);
+    glTranslatef(light0_pos[0],light0_pos[1],light0_pos[2]);
+    glutSolidSphere(0.25,20,20);
+    glPopMatrix();
+    
+    // Render surface using GL_TRIANGLES
+    // Basic surface color
+    const GLfloat sandColor[4]={(225.0f/255.0f),(169.0f/255.0f),(95.0f/255.0f),1.0f};
+    GLfloat differenceColor[4]={(30.0f/255.0f),(86.0f/255.0f),(160.0f/255.0f),1.0f};
+    
+    // Setup material (gold)
+    const GLfloat mat_ambient[4]={0.24725f, 0.1995f, 0.0745f, 1.0f};
+    const GLfloat mat_diffuse[4]={0.75164f, 0.60648f, 0.22648f, 1.0f};
+    const GLfloat mat_specular[4]={0.628281f, 0.555802f, 0.366065f, 1.0f};
+    const GLfloat mat_shine=51.2f;
+    glMaterialfv(GL_FRONT, GL_AMBIENT, mat_ambient);
+    glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
+    glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_diffuse);
+    glMaterialf(GL_FRONT, GL_SHININESS, mat_shine);
+    
+    glBegin(GL_TRIANGLES);
+    // Draw evey tranlges in surface vertex except two bounds
+    // Assign color according to height relating to Maximum height
+    for (int i=0; i<(GRID_RESOLVE-1); i++)
+    {
+        for (int j=0; j<(GRID_RESOLVE-1); j++)
+        {
+            if (GroundXYZ[i][j][2]>=0)
+            {
+                glColor4f(sandColor[0]+differenceColor[0]*(GroundXYZ[i][j][2]/MaximumHeight),
+                          sandColor[1]+differenceColor[1]*(GroundXYZ[i][j][2]/MaximumHeight),
+                          sandColor[2]+differenceColor[2]*(GroundXYZ[i][j][2]/MaximumHeight),
+                          sandColor[3]);
+            }
+            else
+            {
+                glColor4f(sandColor[0],sandColor[1],sandColor[2],sandColor[3]);
+            }
+            
+            // Draw first half triangles
+            glNormal3f(GroundNormals[i][j][0],GroundNormals[i][j][1],GroundNormals[i][j][2]);
+            glVertex3f(GroundXYZ[i][j][0],GroundXYZ[i][j][1],GroundXYZ[i][j][2]);
+            glNormal3f(GroundNormals[i+1][j][0],GroundNormals[i+1][j][1],GroundNormals[i+1][j][2]);
+            glVertex3f(GroundXYZ[i+1][j][0],GroundXYZ[i+1][j][1],GroundXYZ[i+1][j][2]);
+            glNormal3f(GroundNormals[i][j+1][0],GroundNormals[i][j+1][1],GroundNormals[i][j+1][2]);
+            glVertex3f(GroundXYZ[i][j+1][0],GroundXYZ[i][j+1][1],GroundXYZ[i][j+1][2]);
+            
+            // Draw second half triangles
+            glNormal3f(GroundNormals[i+1][j+1][0],GroundNormals[i+1][j+1][1],GroundNormals[i+1][j+1][2]);
+            glVertex3f(GroundXYZ[i+1][j+1][0],GroundXYZ[i+1][j+1][1],GroundXYZ[i+1][j+1][2]);
+            glNormal3f(GroundNormals[i+1][j][0],GroundNormals[i+1][j][1],GroundNormals[i+1][j][2]);
+            glVertex3f(GroundXYZ[i+1][j][0],GroundXYZ[i+1][j][1],GroundXYZ[i+1][j][2]);
+            glNormal3f(GroundNormals[i][j+1][0],GroundNormals[i][j+1][1],GroundNormals[i][j+1][2]);
+            glVertex3f(GroundXYZ[i][j+1][0],GroundXYZ[i][j+1][1],GroundXYZ[i][j+1][2]);
+        }
+    }
+    glEnd();
+    
+    //    // Debug use: Show normal vector for each vertex
+    //
+    //    for (int i=0; i<(GRID_RESOLVE-1); i++)
+    //    {
+    //        for (int j=0; j<(GRID_RESOLVE-1); j++)
+    //        {
+    //            glPushMatrix();
+    //            glTranslatef(GroundXYZ[i][j][0],GroundXYZ[i][j][1],GroundXYZ[i][j][2]);
+    //            glBegin(GL_LINES);
+    //            glVertex3f(0.0f,0.0f,0.0f);
+    //            glVertex3f(GroundNormals[i][j][0],GroundNormals[i][j][1],GroundNormals[i][j][2]);
+    //            glEnd();
+    //            glPopMatrix();
+    //        }
+    //    }
+    
+}
+
+// Help functions for quare-diamond algorithm
+// calculate square vertex avg
+void square(int x, int y, int size, double scaleLevel)
+{
+    GLfloat averageHight=(GroundXYZ[x-size][y-size][2]+
+                          GroundXYZ[x+size][y-size][2]+
+                          GroundXYZ[x-size][y+size][2]+
+                          GroundXYZ[x+size][y+size][2])/4.0f;
+    GroundXYZ[x][y][2]=averageHight+2*scaleLevel*drand48()-scaleLevel;
+}
+// calculate diamond vertex avg
+void diamond(int x, int y, int size, double scaleLevel)
+{
+    GLfloat a,b,c,d;
+    if (x==0)
+    {
+        a=GroundXYZ[x+size][y][2];
+        b=0;
+        c=GroundXYZ[x][y+size][2];
+        d=GroundXYZ[x][y-size][2];
+    }
+    else if (x==GRID_RESOLVE-1)
+    {
+        a=0;
+        b=GroundXYZ[x-size][y][2];
+        c=GroundXYZ[x][y+size][2];
+        d=GroundXYZ[x][y-size][2];
+    }
+    else if (y==0) {
+        a=GroundXYZ[x+size][y][2];
+        b=GroundXYZ[x-size][y][2];
+        c=GroundXYZ[x][y+size][2];
+        d=0;
+    }
+    else if (y==GRID_RESOLVE-1)
+    {
+        a=GroundXYZ[x+size][y][2];
+        b=GroundXYZ[x-size][y][2];
+        c=0;
+        d=GroundXYZ[x][y-size][2];
+    }
+    else
+    {
+        a=GroundXYZ[x+size][y][2];
+        b=GroundXYZ[x-size][y][2];
+        c=GroundXYZ[x][y+size][2];
+        d=GroundXYZ[x][y-size][2];
+    }
+    GLfloat averageHight=(a+b+c+d)/4.0f;
+    GroundXYZ[x][y][2]=averageHight+2*scaleLevel*drand48()-scaleLevel;
+}
+// recursion solving evey vertex square and dimond avg
+void DiamondSquare(int size, double scaleLevel)
+{
+    int halfSize=size/2;
+    if (halfSize<1)
+        return;
+    
+    for(int i=halfSize; i<GRID_RESOLVE; i+=size)
+    {
+        for (int j=halfSize; j<GRID_RESOLVE; j+=size) {
+            square(i, j, halfSize, scaleLevel);
+        }
+    }
+    
+    for (int i=0; i<GRID_RESOLVE; i+=halfSize) {
+        for (int j=(i+halfSize)%size; j<GRID_RESOLVE; j+=size) {
+            diamond(i, j, halfSize, scaleLevel);
+        }
+    }
+    
+    DiamondSquare(size/2, scaleLevel/2);
 }
 
 void MakeSurfaceGrid(void)
@@ -250,18 +423,44 @@ void MakeSurfaceGrid(void)
     //             We don't want plants sinking into the ground!
     /////////////////////////////////////////////////////////////////////////
     double side;
+    double len;
     double vx,vy,vz,wx,wy,wz;
     
-    // Assign surface heights
+    // Assign surface width
     side=15;				// Width of the surface - X and Y coordinates
+    
     // will have values in [-side/2, side/2]
     for (int i=0; i<GRID_RESOLVE; i++)
+    {
         for (int j=0; j<GRID_RESOLVE; j++)
         {
             GroundXYZ[i][j][0]=(-side*.5)+(i*(side/GRID_RESOLVE));
             GroundXYZ[i][j][1]=(-side*.5)+(j*(side/GRID_RESOLVE));
-            GroundXYZ[i][j][2]=0;	// <----- HERE you must define surface height in some smart way!
         }
+    }
+    
+    // Assign surface height
+    // First basic shape: partial shpere (simulating globe)
+    for (int i=0; i<GRID_RESOLVE; i++)
+    {
+        for (int j=0; j<GRID_RESOLVE; j++)
+        {
+            //(sqrt(51529-16*pow(GroundXYZ[i][j][0],2)-16*pow(GroundXYZ[i][j][1],2))-223)/4;
+            //(sqrt(3025-16*pow(GroundXYZ[i][j][0],2)-16*pow(GroundXYZ[i][j][1],2))-35)/4;
+            //(sqrt(54289-64*pow(GroundXYZ[i][j][0],2)-64*pow(GroundXYZ[i][j][1],2))-217)/8;
+            GroundXYZ[i][j][2]=(sqrt(54289-64*pow(GroundXYZ[i][j][0],2)-64*pow(GroundXYZ[i][j][1],2))-217)/8;
+        }
+    }
+    // Second diamond-square alogrithm
+    // Set scale level
+    double scaleLevel=1.5;
+    // Add little randomness into current surface
+    GroundXYZ[0][0][2]+=2*scaleLevel*drand48()-scaleLevel;
+    GroundXYZ[0][GRID_RESOLVE-1][2]+=2*scaleLevel*drand48()-scaleLevel;
+    GroundXYZ[GRID_RESOLVE-1][0][2]+=2*scaleLevel*drand48()-scaleLevel;
+    GroundXYZ[GRID_RESOLVE-1][GRID_RESOLVE-1][2]+=2*scaleLevel*drand48()-scaleLevel;
+    // trap into recurision
+    DiamondSquare(GRID_RESOLVE,scaleLevel);
     
     // Compute normals at each vertex
     // Remember we talked about how to compute the normal for a triangle in lecture. You
@@ -270,19 +469,109 @@ void MakeSurfaceGrid(void)
     // NOTE: Be careful with indexing along the borders of the surface grid! you will
     //       run into all sorts of problems if you don't think carefully what you're
     //       doing.
-    for (int i=0; i<GRID_RESOLVE; i++)
-        for (int j=0; j<GRID_RESOLVE; j++)
+    
+    // In order to get more accurate result
+    // First,  calculate each triangles face normal vector
+    // Second, asign above vector into each vertex
+    // Third,  normalize each vertex's vector to get unit normal vector
+    // Calculate first half triangle face normal vector
+    for (int i=0; i<(GRID_RESOLVE-1); i++)
+    {
+        for (int j=0; j<(GRID_RESOLVE-1); j++)
         {
             // Obtain two vectors on the surface the point at GroundXYZ[i][j][] is located
+            // According to comment to GroundNormals, all we need is to use only one triangle
+            // 4--3
+            // |\ |
+            // | \|
+            // 1--2
+            // So normal only use V(4-1), W(2-1)
+            vx=GroundXYZ[i+1][j][0]-GroundXYZ[i][j][0];
+            vy=GroundXYZ[i+1][j][1]-GroundXYZ[i][j][1];
+            vz=GroundXYZ[i+1][j][2]-GroundXYZ[i][j][2];
+            wx=GroundXYZ[i][j+1][0]-GroundXYZ[i][j][0];
+            wy=GroundXYZ[i][j+1][1]-GroundXYZ[i][j][1];
+            wz=GroundXYZ[i][j+1][2]-GroundXYZ[i][j][2];
+            
             
             // Then compute the normal
             computeNormal(&vx,&vy,&vz,wx,wy,wz);
             
             // And store it...
-            GroundNormals[i][j][0]=0;    // <----- HEY!
-            GroundNormals[i][j][1]=0;    // <----- REPLACE THESE COMPONENTS with the correct
-            GroundNormals[i][j][2]=1;    // <----- normal for your surface!
+            GroundNormals[i][j][0]+=vx;
+            GroundNormals[i][j][1]+=vy;
+            GroundNormals[i][j][2]+=vz;
+            GroundNormals[i+1][j][0]+=vx;
+            GroundNormals[i+1][j][1]+=vy;
+            GroundNormals[i+1][j][2]+=vz;
+            GroundNormals[i][j+1][0]+=vx;
+            GroundNormals[i][j+1][1]+=vy;
+            GroundNormals[i][j+1][2]+=vz;
         }
+    }
+    
+    // Calculate second half triangle face normal vector
+    for (int i=1; i<GRID_RESOLVE; i++)
+    {
+        for (int j=1; j<GRID_RESOLVE; j++)
+        {
+            // Obtain two vectors on the surface the point at GroundXYZ[i][j][] is located
+            // 4--3
+            // |\ |
+            // | \|
+            // 1--2
+            // So normal only use V(2-3), W(4-3)
+            vx=GroundXYZ[i-1][j][0]-GroundXYZ[i][j][0];
+            vy=GroundXYZ[i-1][j][1]-GroundXYZ[i][j][1];
+            vz=GroundXYZ[i-1][j][2]-GroundXYZ[i][j][2];
+            wx=GroundXYZ[i][j-1][0]-GroundXYZ[i][j][0];
+            wy=GroundXYZ[i][j-1][1]-GroundXYZ[i][j][1];
+            wz=GroundXYZ[i][j-1][2]-GroundXYZ[i][j][2];
+            
+            
+            // Then compute the normal
+            computeNormal(&vx,&vy,&vz,wx,wy,wz);
+            
+            // And store it...
+            GroundNormals[i][j][0]+=vx;
+            GroundNormals[i][j][1]+=vy;
+            GroundNormals[i][j][2]+=vz;
+            GroundNormals[i-1][j][0]+=vx;
+            GroundNormals[i-1][j][1]+=vy;
+            GroundNormals[i-1][j][2]+=vz;
+            GroundNormals[i][j-1][0]+=vx;
+            GroundNormals[i][j-1][1]+=vy;
+            GroundNormals[i][j-1][2]+=vz;
+        }
+    }
+    
+    // Normlize two calculations
+    for (int i=0; i<GRID_RESOLVE; i++)
+    {
+        for (int j=0; j<GRID_RESOLVE; j++)
+        {
+            len=sqrt(pow(GroundNormals[i][j][0],2)+
+                     pow(GroundNormals[i][j][1],2)+
+                     pow(GroundNormals[i][j][2],2));
+            GroundNormals[i][j][0]/=len;
+            GroundNormals[i][j][1]/=len;
+            GroundNormals[i][j][2]/=len;
+        }
+    }
+    
+    // Find maximum height for color change
+    MaximumHeight=GroundXYZ[0][0][2];
+    for (int i=0; i<(GRID_RESOLVE-1); i++)
+    {
+        for (int j=0; j<(GRID_RESOLVE-1); j++)
+        {
+            if (MaximumHeight<GroundXYZ[i][j][2])
+            {
+                MaximumHeight=GroundXYZ[i][j][2];
+            }
+        }
+    }
+    
 }
 
 void AnimatedRenderPlant(void)
@@ -318,6 +607,80 @@ void RenderPlant(struct PlantNode *p)
     ////////////////////////////////////////////////////////////
     
     if (p==NULL) return;		// Avoid crash if called with empty node
+    
+    // Setup rotation and scale
+    glPushMatrix();
+    glRotatef(p->x_ang, 1.0f, 0.0f, 0.0f);
+    glRotatef(p->z_ang, 0.0f, 0.0f, 1.0f);
+    glScalef(p->scl,p->scl,p->scl);
+    
+    // Draw stems
+    if ((p->type=='a')||(p->type=='b'))
+    {
+        // Render current stem
+        if ((p->left!=NULL)||(p->right!=NULL))
+        {
+            StemSection();
+            glTranslatef(0.0f, 0.0f, 1.0f);
+        }
+        
+        // Render left child
+        glRotatef((360.0f-p->z_ang), 0.0f, 0.0f, 1.0f);
+        glRotatef((360.0f-p->x_ang), 1.0f, 0.0f, 0.0f);
+        glPushMatrix();
+        RenderPlant(p->left);
+        glPopMatrix();
+        
+        // Render right child
+        glRotatef((360.0f-p->z_ang), 0.0f, 0.0f, 1.0f);
+        glRotatef((360.0f-p->x_ang), 1.0f, 0.0f, 0.0f);
+        glPushMatrix();
+        RenderPlant(p->right);
+        glPopMatrix();
+    }
+    
+    // Draw leaves
+    if (p->type=='c') {
+        LeafSection();
+        // b/c draw stem in leaf
+        glTranslatef(0.0f, 0.0f, 1.0f);
+        
+        // Render left child
+        glRotatef((360.0f-p->z_ang), 0.0f, 0.0f, 1.0f);
+        glRotatef((360.0f-p->x_ang), 1.0f, 0.0f, 0.0f);
+        glPushMatrix();
+        RenderPlant(p->left);
+        glPopMatrix();
+        
+        // Render right child
+        glRotatef((360.0f-p->z_ang), 0.0f, 0.0f, 1.0f);
+        glRotatef((360.0f-p->x_ang), 1.0f, 0.0f, 0.0f);
+        glPushMatrix();
+        RenderPlant(p->right);
+        glPopMatrix();
+    }
+    
+    // Draw flowers
+    if (p->type=='d') {
+        FlowerSection();
+        
+        // Render left child
+        glRotatef((360.0f-p->z_ang), 0.0f, 0.0f, 1.0f);
+        glRotatef((360.0f-p->x_ang), 1.0f, 0.0f, 0.0f);
+        glPushMatrix();
+        RenderPlant(p->left);
+        glPopMatrix();
+        
+        // Render right child
+        glRotatef((360.0f-p->z_ang), 0.0f, 0.0f, 1.0f);
+        glRotatef((360.0f-p->x_ang), 1.0f, 0.0f, 0.0f);
+        glPushMatrix();
+        RenderPlant(p->right);
+        glPopMatrix();
+    }
+    
+    glPopMatrix();
+    
 }
 
 void StemSection(void)
@@ -330,6 +693,7 @@ void StemSection(void)
     GLUquadric *quadObject;
     quadObject=gluNewQuadric();
     
+    glColor3f(.25,1,.1);
     gluCylinder(quadObject,.05,.04,1,10,10);
     
     // Destroy our quadrics object
@@ -343,6 +707,9 @@ void LeafSection(void)
     glColor3f(.25,1,.1);
     StemSection();
     // Perhaps you should translate now? :)
+    glPushMatrix();
+    glTranslatef(0.0f, 0.0f, 1.0f);
+    glScalef(0.3f,0.3f,0.3f);
     
     ////////////////////////////////////////////////////////////
     // TO DO: Draw your own leaf design.
@@ -397,6 +764,23 @@ void LeafSection(void)
     // DO YOUR DRAWING WORK HERE!!!!
     ///////////////////////////////////////////////////////////
     
+    glColor4f(1,1,1,1);
+    // Mapping texture
+    glBegin(GL_QUADS);
+    glTexCoord2f(0.0f, 1.0f);
+    glNormal3f(0.0f,-1.0f,0.0f);
+    glVertex3f(-1.0f,0.0f,-1.0f);
+    glTexCoord2f(1.0f, 1.0f);
+    glNormal3f(0.0f,-1.0f,0.0f);
+    glVertex3f(1.0f,0.0f,-1.0f);
+    glTexCoord2f(1.0f, 0.0f);
+    glNormal3f(0.0f,-1.0f,0.0f);
+    glVertex3f(1.0f,0.0f,1.0f);
+    glTexCoord2f(0.0f, 0.0f);
+    glNormal3f(0.0f,-1.0f,0.0f);
+    glVertex3f(-1.0f,0.0f,1.0f);
+    glEnd();
+    
     // Disable texture mapping
     if (textures_on)
     {
@@ -405,11 +789,20 @@ void LeafSection(void)
         glDisable (GL_BLEND);
     }
     
+    glPopMatrix();
+    
 }
 
 void FlowerSection()
 {
     // Draws a flower perpendicular to the current local Z axis
+    // Note that we draw a little stem before the actual leaf.
+    glColor3f(.25,1,.1);
+    StemSection();
+    // Perhaps you should translate now? :)
+    glPushMatrix();
+    glTranslatef(0.0f, 0.0f, 1.0f);
+    glScalef(0.45f,0.45f,0.45f);
     
     /////////////////////////////////////////////////////////////
     // TO DO: Add code to draw a flower,
@@ -452,6 +845,22 @@ void FlowerSection()
     // DO YOUR DRAWING WORK HERE!!
     /////////////////////////////////////////////////////////////
     
+    glColor4f(1,1,1,1);
+    glBegin(GL_QUADS);
+    glTexCoord2f(0.0f, 1.0f);
+    glNormal3f(0.0f,0.0f,1.0f);
+    glVertex3f(-1.0f,-1.0f,0.0f);
+    glTexCoord2f(1.0f, 1.0f);
+    glNormal3f(0.0f,0.0f,1.0f);
+    glVertex3f(1.0f,-1.0f,0.0f);
+    glTexCoord2f(1.0f, 0.0f);
+    glNormal3f(0.0f,0.0f,1.0f);
+    glVertex3f(1.0f,1.0f,0.0f);
+    glTexCoord2f(0.0f, 0.0f);
+    glNormal3f(0.0f,0.0f,1.0f);
+    glVertex3f(-1.0f,1.0f,0.0f);
+    glEnd();
+    
     // Disable texture mapping
     if (textures_on)
     {
@@ -459,6 +868,8 @@ void FlowerSection()
         glDisable(GL_TEXTURE_2D);
         glDisable (GL_BLEND);
     }
+    
+    glPopMatrix();
 }
 
 void FreePlant(struct PlantNode *p)
@@ -740,6 +1151,12 @@ int main(int argc, char** argv)
         if (Win[1]<250) Win[1]=250;
         if (Win[1]>1024) Win[1]=1024;
         
+        // For animate the light
+        LightAngle=-90;
+        
+        // initialize random seed
+        srand48(5421);
+        
         ////////////////////////////////////////////////
         // CRUNCHY - If you are going to use textures
         //           for your leafs and flowers, update
@@ -755,7 +1172,7 @@ int main(int argc, char** argv)
         //           submit your texture images along
         //           with your completed code.
         ////////////////////////////////////////////////
-        textures_on=0;		// Set to 1 to enable texturing
+        textures_on=1;		// Set to 1 to enable texturing
         if (textures_on)
         {
             leaf_texture=readPPM("leaf_texture_image.ppm",&l_sx,&l_sy);	// Evidently, you must change this to be
@@ -779,6 +1196,7 @@ int main(int argc, char** argv)
     memset(&GroundXYZ[0][0][0],0,GRID_RESOLVE*GRID_RESOLVE*3*sizeof(GL_FLOAT));
     memset(&GroundNormals[0][0][0],0,GRID_RESOLVE*GRID_RESOLVE*3*sizeof(GL_FLOAT));
     memset(&ForestXYZ[0][0],0,n_plants*3*sizeof(GL_FLOAT));
+    memset(&light0_pos[0],0,3*sizeof(GL_FLOAT));
     
     // Generate surface map
     MakeSurfaceGrid();
@@ -793,9 +1211,41 @@ int main(int argc, char** argv)
     //        the corresponding location in the surface grid.
     //////////////////////////////////////////////////////////////
     
+    // Random gengrate X, Y position
+    for (int i=0; i<n_plants; i++) {
+        // Random choose index
+        int section=i%4;
+        int index_x;
+        int index_y;
+        if (section==0)
+        {
+            index_x=(int) round((GRID_RESOLVE/2)*drand48());
+            index_y=(int) round((GRID_RESOLVE/2)*drand48());
+        }
+        else if (section==1)
+        {
+            index_x=(int) round((GRID_RESOLVE/2)*drand48()+(GRID_RESOLVE/2));
+            index_y=(int) round((GRID_RESOLVE/2)*drand48());
+        }
+        else if (section==2)
+        {
+            index_x=(int) round((GRID_RESOLVE/2)*drand48());
+            index_y=(int) round((GRID_RESOLVE/2)*drand48()+(GRID_RESOLVE/2));
+        }
+        else
+        {
+            index_x=(int) round((GRID_RESOLVE/2)*drand48()+(GRID_RESOLVE/2));
+            index_y=(int) round((GRID_RESOLVE/2)*drand48()+(GRID_RESOLVE/2));
+        }
+        
+        ForestXYZ[i][0]=GroundXYZ[index_x][index_y][0];
+        ForestXYZ[i][1]=GroundXYZ[index_x][index_y][1];
+        ForestXYZ[i][2]=GroundXYZ[index_x][index_y][2];
+    }
+    
     // Intialize global transformation variables and GLUI
-    global_Z=0;
-    global_scale=15;
+    global_Z=90;
+    global_scale=10;
     ImGui_ImplGlut_Init(false);
     
     // Invoke the standard GLUT main event loop
@@ -890,7 +1340,7 @@ void setupUI()
 {
     glDisable(GL_LIGHTING);
     ImGui_ImplGlut_NewFrame();
-    ImGui::Begin("PlantLife Window");
+    ImGui::Begin("PlantLife Window",NULL,ImGuiWindowFlags_AlwaysAutoResize);
     
     ///////////////////////////////////////////////////////////
     // TO DO: Add the controls for global rotation and scale
@@ -901,6 +1351,10 @@ void setupUI()
     //        global_Z must be in [-180, 180]
     //        global_scale must be in [0, 20]
     ///////////////////////////////////////////////////////////
+    
+    // default: global_Z=0; global_scale=10;
+    ImGui::SliderFloat("Rotation",&global_Z,-180.0f,180.0f);
+    ImGui::SliderFloat("Scale",&global_scale,0.0f,20.0f);
     
     ImGui::SetWindowFocus();
     ImGui::ColorEdit3("clear color", (float*)&clear_color);
@@ -958,6 +1412,14 @@ void WindowDisplay(void)
     //    static int Opening_animation=1;	// Comment the line above and uncomment this line
     // if you implemented the plant growing animation.
     
+    // !!!!!!!!!!!!!! the previous code, when rotating, lighting is incorrect for back face b/c camera doesn't change
+    // rotate camera
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    gluPerspective(60,1,15,500);
+    gluLookAt(150,150,150,0,0,50,0,0,1);
+    glRotatef(global_Z,0,0,1);
+    
     // Clear colour buffer and Z-buffer
     glClearColor(clear_color.x, clear_color.y, clear_color.z, clear_color.w);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -968,19 +1430,27 @@ void WindowDisplay(void)
     glClearDepth(1);
     glEnable(GL_DEPTH_TEST);    // Enable depth testing
     glEnable(GL_LIGHTING);      // Enable lighting
-    glEnable(GL_LIGHT0);        // Set up 1 light sources, 1 for diffuse,
-    glEnable(GL_LIGHT1);        // 1 for ambient
+    glEnable(GL_LIGHT0);        // Set up 1 light sources for diffuse, specular and ambient
     
     glEnable(GL_NORMALIZE);	// Make sure normals stay normalized...
     
     // Set up light source colour, type, and position
-    GLfloat light0_colour[]={.95,.95,.95};
-    GLfloat light1_colour[]={.05,.05,.05};
-    glLightfv(GL_LIGHT0,GL_DIFFUSE,light0_colour);
-    glLightfv(GL_LIGHT1,GL_AMBIENT,light1_colour);
-    GLfloat light0_pos[]={2,2,5,0};
-    glLightfv(GL_LIGHT0,GL_POSITION,light0_pos);
+    GLfloat diffuseLight[4]={0.95f,0.95f,0.95f,1.0f};
+    GLfloat ambientLight[4]={0.05f,0.05f,0.05f,1.0f};
+    GLfloat specularLight[4]={0.95f,0.95f,0.95f,1.0f};
+    glLightfv(GL_LIGHT0,GL_DIFFUSE,diffuseLight);
+    glLightfv(GL_LIGHT0,GL_AMBIENT,ambientLight);
+    glLightfv(GL_LIGHT0,GL_SPECULAR,specularLight);
     glShadeModel(GL_SMOOTH);
+    
+    // Animate the light
+    LightAngle=fmodf((LightAngle+0.5), 360.0);
+    GLfloat Radius=sqrt(7.5*7.5+7.5*7.5);
+    light0_pos[0]=Radius*cos(LightAngle*(PI/180.0));
+    light0_pos[1]=Radius*sin(LightAngle*(PI/180.0));
+    light0_pos[2]=7.5;
+    glLightfv(GL_LIGHT0,GL_POSITION,light0_pos);
+    
     
     // Enable material colour properties
     glEnable(GL_COLOR_MATERIAL);
@@ -1045,7 +1515,6 @@ void WindowDisplay(void)
         // synchronize variables that GLUT uses
         glPushMatrix();
         glScalef(global_scale,global_scale,global_scale);
-        glRotatef(global_Z,0,0,1);
         RenderSurfaceGrid();
         for (int i=0; i<n_plants; i++)
         {
